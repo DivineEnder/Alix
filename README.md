@@ -1,10 +1,19 @@
-# Win-Unix-Shell-WUS-
-Win-Unix-Shell (WUS) is a project which uses a combination of batch and python scripting in order to bring some of the functionality afforded in to a Unix terminal to the windows command line while also adding several very helpful commands.
-*To use WUS simply clone the repository and then add the repository directory to your environmental path variable.*
+# Alix
+Alix is a project to replicate the alias command from Unix. It uses python scripting in order to easily create batch files for the specfied commands. Currently Alix needs to be cloned and then its root directory needs to bee added to the environment variables.
+*To use Alix simply clone the repository and then add the repository directory to your environmental path variable.*
 
-**It does not replace command line built in commands**
+Alix also includes several over simple Unix commands that still have not been ported to Windows. See a full list of implementations in the wiki.
 
-Instead WUS is an attempt to simulate some of the basic Unix commands using windows command line functionality. WUS not only tries to add command not previously found (such as the alias command), but also allows the use of the more command linux commands that already have Windows counterparts. This gives the user the ability to memorize the syntax realted to only one terminal, instead of constantly having to look up the comparable command in windows.
+######Implemented
++ Alias
++ ~ (home directory command)
+
+######TODO
++ Man
+
+######Possibilities
++ Chronjob?
+
 
 ##Requirements
   * Python 3
