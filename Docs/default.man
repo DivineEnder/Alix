@@ -1,0 +1,2 @@
+Usage: alix [OPTION]... ALIAS BASH_COMMAND
+Try 'alix --help' for more information.

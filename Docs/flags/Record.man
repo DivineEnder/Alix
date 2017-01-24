@@ -1,0 +1,2 @@
+  -r, --record		Records actions to create an alix script
+  useage: alix -r [COMMAND_NAME]

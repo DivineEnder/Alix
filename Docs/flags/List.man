@@ -1,0 +1,3 @@
+  -l, --list			List the names of all the current alix commands
+  -ld, --list_details	Lists all current alix commands and their scripts
+  useage: alix -l

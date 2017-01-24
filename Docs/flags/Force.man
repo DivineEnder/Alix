@@ -1,0 +1,2 @@
+  -f, --force		Forces an overwrite of a perviously created command
+  useage: alix -f COMMAND_NAME COMMAND

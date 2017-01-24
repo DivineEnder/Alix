@@ -4,20 +4,24 @@ from subprocess import call as cmd
 from pprint import pprint
 import json
 
-FLAG_ARG_DICT = { "-d":1, "-r":"0-1", "-l":0, "-ld":0 }
-ENV = {}
+from utils.utils import alix_path, docs_path, flags_path
+from utils.utils import load_env
 
-def import_env():
-	file_dir = os.path.realpath(__file__).replace(os.path.basename(__file__), "")
-	with open("%s.env" % file_dir , "r") as environment:
-		for line in environment:
-			line = line.replace("\n", "")
-			var_name, var = line.split("=")
-			ENV[var_name] = var
 try:
-	import_env()
+	ENV = load_env()
 except FileNotFoundError:
 	raise EnvironmentError("No Environment file found for Alix. Alix needs several system variables defined for it. Run setup.py to properly install Alix.")
+
+def read_flags():
+	flag_dict = {}
+	with open("%s\\flags.list" % docs_path(), "r") as flag_list:
+		for line in flag_list:
+			line = line.replace("\n", "")
+			flags, args = tuple([item.split(",") for item in filter(None, line.split(":"))])
+			args = list(map(int, args))
+			for flag in flags:
+				flag_dict[flag] = { "args": args }
+	return flag_dict
 
 def alix_list():
 	commands = {}
@@ -126,18 +130,29 @@ def alix_update():
 				with open("%s%s.bat" % (ENV["ALIX_PATH"], cur_command), "a") as command_file:
 					command_file.write(line.replace("\t", ""))
 
+def alix_man(page = "default", is_flag = False):
+	if is_flag:
+		man_path = "%s\\%s.man" % (flags_path(), page)
+	else:
+		man_path = "%s\\%s.man" % (docs_path(), page)
+	
+	with open(man_path, "r") as man:
+		for line in man:
+			print(line, end = "")
+	print("\n")
 
 def main(args):
+	flag_dict = read_flags()
+
 	if len(args) == 0:
-		raise UserWarning("No args passed to alix command")
+		alix_man()
 	else:
 		flags = []
 		command_name = None
 		command = None
-		# print("args were: " + str(args))
 
 		i = 0
-		while (i < len(args) and args[i][0] == "-"):
+		while (i < len(args) and (args[i][0] == "-" or args[i][0:1] == "--")):
 			flags.append(args[i])
 			i = i + 1
 
@@ -149,19 +164,15 @@ def main(args):
 		elif (i == 1):
 			flag = flags[0]
 			command_args = args[1:]
-			num_flag_args = FLAG_ARG_DICT[flags[0]]
-
-			if type(num_flag_args) is str:
-				num_flag_args_min, num_flag_args_max = (int(num_flag_args.split("-")[0]), int(num_flag_args.split("-")[1]))
-				assert len(command_args) >= num_flag_args_min and len(command_args) <= num_flag_args_max, "Alix passed wrong number of args for '%s' flag (given %d args)" % (flags[0], len(command_args))
-			else:
-				assert len(command_args) == num_flag_args, "Alix passed wrong number of args for '%s' flag (given %d args)" % (flags[0], len(command_args))
+			num_flag_args = flag_dict[flag]["args"]
+			assert len(command_args) in num_flag_args, "Alix passed wrong number of args for '%s' flag (given %d args)" % (flags[0], len(command_args))
 
 			DELETE_FLAGS = ["--delete", "-d"]
 			RECORD_FLAGS = ["--record", "-r"]
 			LIST_FLAGS = ["--list", "-l"]
-			LIST_DETAILS_FLAGS = ["--listdets", "-ld"]
+			LIST_DETAILS_FLAGS = ["--list-details", "-ld"]
 			FORCE_FLAGS = ["--force", "-f"]
+			HELP_FLAGS = ["--help", "-h"]
 
 			if flag in DELETE_FLAGS:
 				alix_delete(command_args[0])
@@ -176,6 +187,24 @@ def main(args):
 				pprint(alix_list(), indent = 2)
 			elif flag in FORCE_FLAGS:
 				alix_create(command_args[0], command_args[1], True)
+			elif flag in HELP_FLAGS:
+				alix_man()
+				for file in os.listdir(flags_path()):
+					if file.endswith(".man"):
+						print("%s:" % file.replace(".man", ""))
+						alix_man(file.replace(".man", ""), is_flag = True)
+				# for root, dirs, files in os.walk(os.path.realpath(__file__).replace(os.path.basename(__file__), "")):
+					# for name in files:
+					# 	if name.endswith(".man") and not name == "default.man":
+					# 		print("%s:" % name.replace(".man", ""))
+					# 		alix_man(page = name.replace(".man", ""))
+					# 		print()
+				print()
+				# alix_man()
+			else:
+				alix_man()
+		else:
+			alix_man()
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@ from tkinter import Tk as tk
 from tkinter import messagebox as message
 from tkinter import filedialog as dialog
 
+from utils.utils import alix_path, env_path, alixes_path
+
 import functools
 
 def trackcalls(func):
@@ -23,7 +25,7 @@ def trackcalls(func):
 	wrapper.resp = None
 	return wrapper
 
-def write_env_file(**env_vars): #ALIX_PATH, ALIXES_PATH, ENV_PATH, SCRIPT_ENV_PATH):
+def write_env_file(**env_vars):
 	with open(".env", "w") as environment:
 		for env_var in env_vars:
 			environment.write("%s=%s\n" % (env_var, env_vars[env_var]().replace("\\", "/")))
@@ -44,15 +46,6 @@ def py3_path():
 	execs = [file for file in os.listdir(dir_path) if file.endswith(".exe") and file.startswith("python")]
 	file_path = dir_path + "\\" + [file for file in execs if not file == "pythonw.exe"][0]
 	return file_path
-
-def alix_path():
-	return os.path.realpath(__file__).replace(os.path.basename(__file__), "")
-
-def alixes_path():
-	return alix_path() + ".alix"
-
-def env_path():
-	return alix_path() + ".env"
 
 def install():
 	write_env_file(
