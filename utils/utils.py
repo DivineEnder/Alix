@@ -7,7 +7,6 @@ def alixes_path():
 	return alix_path() + ".alix"
 
 def env_path():
-	print(alix_path() + ".env")
 	return alix_path() + ".env"
 
 def docs_path():

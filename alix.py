@@ -59,20 +59,24 @@ def alix_has_command(command_name):
 		return False
 
 def alix_delete(command_name):
-	assert alix_has_command(command_name), "Alix has no command '%s'" % command_name
+	if not alix_has_command(command_name):
+		print("Alix has no command '%s'." % command_name)
+		print("You can use '-l' to print all alix commands.\n")
+		return
 
 	commands = alix_list()
 	open(ENV["ALIXES_PATH"], "w").close()
 
 	for command in commands:
 		if (command != command_name):
-			alix_create(command, commands[command])
+			alix_create(command, commands[command], silent = True)
 		else:
-			cmd("rm %s.bat" % command)
+			cmd("rm %s%s.bat" % (ENV["ALIX_PATH"], command))
+			cmd("rm %s%s.bat" % (ENV["CMDS_PATH"], command))
 
 	print("Deleted alix named '%s'." % command_name)
 
-def alix_create(command_name, commands, force = False):
+def alix_create(command_name, commands, force = False, silent = False):
 	if alix_has_command(command_name):
 		print("Alix already has command '%s'" % command_name)
 		if input("Would you like to replace it (y/n) : ").lower() == "y":
@@ -94,24 +98,36 @@ def alix_create(command_name, commands, force = False):
 
 	alix_update()
 
-	print("Created alix command '%s'." % command_name)
+	if not silent:
+		print("Created alix command '%s'.\n" % command_name)
 
 def alix_record(command_name = None):
 	commands_rec = []
 
 	command = None
-	print("Alix is now recording commands. Type 'alix -s' to stop recording or 'help' for more information.")
-	while (command != "alix -s"):
+	print("Alix is now recording commands.\nUse 'alix -qw' to save what has been recorded as a command.\nUse 'help' for more information.\n")
+	while (command != "alix -qw"):
 		command = str(input("(AlixRec) " + os.getcwd() + ">"))
 
-		if not (command == "alix -s" or command.lower() == "help"):
+		if not (command == "alix -d" or command == "alix -q" or command == "alix -qw" or command.lower() == "help"):
 			cmd(command, shell = True)
 			commands_rec.append(command)
-		elif (command.lower() == "help"):
-			print("Alix record sit behind the shell, noticing and recording your commands.")
+		elif command.lower() == "help":
+			print("Alix record sits behind the shell, noticing and recording your commands.")
 			print("Since Alix is a python script any commmand typed will be fed through python to the command line.")
-			print("Alix was created by DivineEnder")
-			print("To stop recording type\n\t'alix -s'")
+			print("Alix was created by DivineEnder.")
+			print("To stop recording use the command: 'alix -qw'")
+			print("To quit without saving a command use the command: 'alix -q'")
+			print("To delete a previously recorded command use: 'alix -d'\n")
+		elif command == "alix -q":
+			print("No command was saved.\n")
+			return
+		elif command == "alix -d":
+			if len(commands_rec) > 0:
+				print("Deleted previous command '%s'.\n" % commands_rec[-1])
+				commands_rec = commands_rec[:-1]
+			else:
+				print("You have not yet recorded any commands.\n")
 
 	if command_name == None:
 		command_name = input("Print please enter the command name you would like associated with your recorded actions: ")
@@ -126,8 +142,11 @@ def alix_update():
 				cur_command = line.replace("\n", "")
 				with open("%s%s.bat" % (ENV["ALIX_PATH"], cur_command), "w") as command_file:
 					command_file.write("@ECHO OFF\n")
+					command_file.write("%s%s.bat\n" % (ENV["CMDS_PATH"], cur_command))
+				with open("%s%s.bat" % (ENV["CMDS_PATH"], cur_command), "w") as command_file:
+					command_file.write("@ECHO OFF\n")
 			else:
-				with open("%s%s.bat" % (ENV["ALIX_PATH"], cur_command), "a") as command_file:
+				with open("%s%s.bat" % (ENV["CMDS_PATH"], cur_command), "a") as command_file:
 					command_file.write(line.replace("\t", ""))
 
 def alix_man(page = "default", is_flag = False):
