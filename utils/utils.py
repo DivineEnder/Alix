@@ -9,6 +9,9 @@ def alixes_path():
 def env_path():
 	return alix_path() + ".env"
 
+def cmds_path():
+	return alix_path() + "cmds"
+
 def docs_path():
 	return alix_path() + "Docs"
 
@@ -22,4 +25,8 @@ def load_env():
 			line = line.replace("\n", "")
 			var_name, var = line.split("=")
 			ENV[var_name] = var
+
+	if not os.path.exists(ENV["CMDS_PATH"]):
+		os.makedirs(ENV["CMDS_PATH"])
+		
 	return ENV

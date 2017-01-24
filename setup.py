@@ -53,7 +53,8 @@ def install():
 		PY3_EXEC_PATH = py3_path,
 		ALIX_PATH = alix_path,
 		ALIXES_PATH = alixes_path,
-		ENV_PATH = env_path)
+		ENV_PATH = env_path,
+		CMDS_PATH = cmds_path)
 
 	cmd("setx ALIX_HOME %s" % alix_path())
 
