@@ -2,7 +2,7 @@
 # @Author: David Anuta
 # @Date:   2016-12-22 15:12:28
 # @Last Modified by:   David Anuta
-# @Last Modified time: 2016-12-29 14:11:07
+# @Last Modified time: 2017-01-24 18:10:34
 
 import os
 from subprocess import call as cmd
@@ -10,7 +10,7 @@ from tkinter import Tk as tk
 from tkinter import messagebox as message
 from tkinter import filedialog as dialog
 
-from utils.utils import alix_path, env_path, alixes_path
+from utils.utils import alix_path, env_path, alixes_path, cmds_path
 
 import functools
 

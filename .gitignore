@@ -1,2 +1,3 @@
 *.bat
 .*
+utils/__pycache__/*
