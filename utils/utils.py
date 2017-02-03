@@ -10,7 +10,7 @@ def env_path():
 	return alix_path() + ".env"
 
 def cmds_path():
-	return alix_path() + "cmds"
+	return alix_path() + "cmds\\"
 
 def docs_path():
 	return alix_path() + "Docs"
