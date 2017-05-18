@@ -1,2 +1,0 @@
-  -d, --delete		Deletes specified command
-  useage: alix -d COMMAND_NAME

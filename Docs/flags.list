@@ -1,6 +1,0 @@
--d,--delete:1
--r,--record:0,1
--l,--list:0
--ld,--list-details:0
--f,--force:2
--h,--help:0
