@@ -1,76 +1,79 @@
-# -*- coding: utf-8 -*-
-# @Author: David Anuta
-# @Date:   2016-12-22 15:12:28
-# @Last Modified by:   David Anuta
-# @Last Modified time: 2017-01-24 18:10:34
+# @Author: DivineEnder
+# @Date:   2016-12-22 12:12:28
+# @Email:  danuta@u.rochester.edu
+# @Last modified by:   DivineEnder
+# @Last modified time: 2017-08-13 12:06:26
 
-import os
-from subprocess import call as cmd
-from tkinter import Tk as tk
-from tkinter import messagebox as message
-from tkinter import filedialog as dialog
 
-from utils.utils import alix_path, env_path, alixes_path, cmds_path
+"""A project to bring the alias command to Windows
+See:
+https://github.com/DivineEnder/Alix
+"""
 
-import functools
+from setuptools import setup, find_packages
+# To use a consistent encoding
+from codecs import open
+from os import path
 
-def trackcalls(func):
-	@functools.wraps(func)
-	def wrapper(*args, **kwargs):
-		resp = func(*args, **kwargs)
-		wrapper.called = True
-		wrapper.resp = resp
-		return resp
-	wrapper.called = False
-	wrapper.resp = None
-	return wrapper
+module_dir = path.abspath(path.dirname(__file__))
+print(module_dir)
 
-def write_env_file(**env_vars):
-	with open(".env", "w") as environment:
-		for env_var in env_vars:
-			environment.write("%s=%s\n" % (env_var, env_vars[env_var]().replace("\\", "/")))
+# Get the long description from the README file
+with open(path.join(module_dir, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
-@trackcalls
-def py3_dir_path():
-	if not py3_dir_path.called:
-		tk().withdraw()
-		message.showinfo("Python 3 Path", "Please select the directory in which Python 3 is installed on this machine.")
-		dir_path = dialog.askdirectory(initialdir = "C:\\", mustexist = True, title = "Python 3 Path Finder")
-	else:
-		dir_path = py3_dir_path.resp
+setup(
+    name='Alix',
 
-	return dir_path
+    version='1.0.0',
 
-def py3_path():
-	dir_path = py3_dir_path()
-	execs = [file for file in os.listdir(dir_path) if file.endswith(".exe") and file.startswith("python")]
-	file_path = dir_path + "\\" + [file for file in execs if not file == "pythonw.exe"][0]
-	return file_path
+    description='A project to bring the unix alias command to Windows',
+    long_description=long_description,
 
-def install():
-	write_env_file(
-		PY3_PATH = py3_dir_path,
-		PY3_EXEC_PATH = py3_path,
-		ALIX_PATH = alix_path,
-		ALIXES_PATH = alixes_path,
-		ENV_PATH = env_path,
-		CMDS_PATH = cmds_path)
+    # The project's main homepage.
+    url='https://github.com/DivineEnder/Alix',
 
-	cmd("setx ALIX_HOME %s" % alix_path())
+    # Author details
+    author='DivineEnder',
+    author_email='qwertydraw@gmail.com',
 
-	print("Env file created. Alix should be setup.\nHappy alixing!")
+    license='MIT',
 
-def main():
-	try:
-		open(".env", "r").close()
-		print("WARNING: Running setup will reset Alix .env file.\nThis will reset any preferences you have previously set and they will have to be added back in manually.")
-		if input("Would you like to continue Alix setup (y/n) : ").lower() == "y":
-			install()
-		else:
-			print("Quitting install...")
+	# List @ https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[
+		# Development status
+        'Development Status :: 2 - Pre-Alpha',
 
-	except FileNotFoundError:
-		install()
+		# Basic identifiers
+		'Natural Language :: English',
+		'Operating System :: Microsoft :: Windows',
+		'License :: OSI Approved :: MIT License',
 
-if __name__ == '__main__':
-	main()
+		# Audience
+        'Intended Audience :: Developers',
+
+		# Topics
+		'Environment :: Console',
+		'Topic :: Software Development',
+        'Topic :: Software Development :: Build Tools',
+		'Topic :: Utilities',
+
+		# Languages
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+    ],
+
+    keywords='alix console command alias scripting',
+    packages=find_packages(),
+	# Requirements
+    install_requires=['pickle', 'argparse', 'python-dotenv'],
+	python_requires='>=3',
+
+	entry_points={
+    'console_scripts': [
+        'alix=alix:main',
+    ]
+},
+)
