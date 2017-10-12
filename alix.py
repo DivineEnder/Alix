@@ -2,7 +2,7 @@
 # @Date:   2016-11-29 21:02:44
 # @Email:  danuta@u.rochester.edu
 # @Last modified by:   DivineEnder
-# @Last modified time: 2017-08-13 12:53:54
+# @Last modified time: 2017-10-12 19:07:05
 
 
 import sys
@@ -270,6 +270,10 @@ class Alix(object):
 			if not name is None:
 				# Move upper level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.alix_path, alix, self.alix_path, name))
+				# Change the upper level file to call the new lower file
+				with open("%s%s.bat" % (self.alix_path, name), "w") as file:
+					file.write("@ECHO OFF\n")
+					file.write("%s%s.bat\n" % (self.cmds_path, name))
 				# Move lower level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.cmds_path, alix, self.cmds_path, name))
 				# Change alix name to new name in dictionary
