@@ -179,7 +179,7 @@ class Alix(object):
 			# Create the upper level batch file that calls the actual file to execute the commands
 			with open("%s%s.bat" % (self.alix_path, alix), "w") as command_file:
 				command_file.write("@ECHO OFF\n")
-				command_file.write("%s%s.bat\n" % (self.cmds_path, alix))
+				command_file.write("%s%s.bat %%*\n" % (self.cmds_path, alix))
 
 			# Create the lower level batch file that actually executes the command
 			with open("%s%s.bat" % (self.cmds_path, alix), "w") as command_file:
@@ -273,7 +273,7 @@ class Alix(object):
 				# Change the upper level file to call the new lower file
 				with open("%s%s.bat" % (self.alix_path, name), "w") as file:
 					file.write("@ECHO OFF\n")
-					file.write("%s%s.bat\n" % (self.cmds_path, name))
+					file.write("%s%s.bat %%*\n" % (self.cmds_path, name))
 				# Move lower level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.cmds_path, alix, self.cmds_path, name))
 				# Change alix name to new name in dictionary
