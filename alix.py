@@ -1,3 +1,10 @@
+# @Author: DivineEnder
+# @Date:   2016-11-29 21:02:44
+# @Email:  danuta@u.rochester.edu
+# @Last modified by:   DivineEnder
+# @Last modified time: 2017-11-17 22:12:42
+
+
 import sys
 import os
 from subprocess import call as cmd
@@ -40,7 +47,23 @@ class Alix(object):
 	# Load dictionary of alixes from the specified pickle file
 	def load_alixes(self, cmds_file = None):
 		cmds_file = self.alixes_path if cmds_file is None else cmds_file
-		return pickle.load(open(cmds_file, "rb"))
+		loaded_alixes = pickle.load(open(cmds_file, "rb"))
+		# Check alixes to see if they need to be updated
+		for alix in loaded_alixes:
+			# If missing the modtime or the dictionary is not up to date update the dictionary with the newly modified file command
+			if not "lastmod" in loaded_alixes[alix].keys() or not int(loaded_alixes[alix]["lastmod"]) == int(os.path.getmtime("%s%s.bat" % (self.cmds_path, alix))):
+				cmd = []
+				# Read command from file (ignores @ECHO OFF)
+				with open("%s%s.bat" % (self.cmds_path, alix), "r") as file:
+					for line in file:
+						if not "@echo off" in line.lower() and not line.lower().startswith("rem") and not line.isspace() and not line == "":
+							cmd.append(line.replace("\n", ""))
+				# Set new modtime
+				loaded_alixes[alix]["lastmod"] = int(os.path.getmtime("%s%s.bat" % (self.cmds_path, alix)))
+				# Set the alix command to the read command
+				loaded_alixes[alix]["cmd"] = cmd
+		# Return dictionary of alixes
+		return loaded_alixes
 
 	# Store the dictionary of alixes in the specified pickle file
 	def store_alixes(self, cmds_file = None, alixes = None):
@@ -72,6 +95,32 @@ class Alix(object):
 		self.clean(self.cmds_path)
 		self.store_alixes()
 
+	# Parse arguments for the list command
+	def list_parse(self, flags):
+		# Create list parser
+		list_parser = argparse.ArgumentParser(prog = "alix list", description = "List avaliable alix commands")
+		list_parser.add_argument("-v", "--verbose", action = "store_true", help = "Verbose printing of commands")
+
+		# Parse list arguments
+		list_flags = list_parser.parse_args(flags)
+		# Print alix commands
+		for alix in self.alixes.keys():
+			self.show(alix, list_flags.verbose)
+
+	# Parse arguments for the show command
+	def show_parse(self, flags):
+		# Create show parser
+		show_parser = argparse.ArgumentParser(prog = "alix show", description = "Examine a single alix")
+		show_parser.add_argument("alix", help = "The alias used to call the command")
+		show_parser.add_argument("-v", "--verbose", action = "store_true", help = "Verbose printing of the command")
+
+		# Parse show arugments
+		show_flags = show_parser.parse_args(flags)
+
+		# Print alix command (error on bad print)
+		if not self.show(show_flags.alix, show_flags.verbose):
+			show_parser.error("Try the 'list' subcommand to list all alix commands")
+
 	# Display the given alix command
 	def show(self, alix, VERBOSE = False):
 		if self.is_alix(alix):
@@ -90,36 +139,47 @@ class Alix(object):
 			# Return show failed
 			return False
 
-	# Parse arguments for the show command
-	def show_parse(self, flags):
-		# Create show parser
-		show_parser = argparse.ArgumentParser(prog = "alix show", description = "Examine a single alix")
-		show_parser.add_argument("alix", help = "The alias used to call the command")
-		show_parser.add_argument("-v", "--verbose", action = "store_true", help = "Verbose printing of the command")
+	# Parse arguments for the record command
+	def record_parse(self, flags):
+		# Create the argument parser for the record option of alix
+		record_parser = argparse.ArgumentParser(prog = "alix record", description = "Record an alix command")
+		record_parser.add_argument("alias", help = "The alias to use for the recorded command")
+		record_parser.add_argument("-f", "--force", action = "store_true", help = "Replace any existing alix commands with the new alix command")
+		record_parser.add_argument("description", nargs = "?", default = None, help = "Provide a description for the alix")
 
-		# Parse show arugments
-		show_flags = show_parser.parse_args(flags)
+		# Parse record arguments
+		record_flags = record_parser.parse_args(flags)
 
-		# Print alix command (error on bad print)
-		if not self.show(show_flags.alix, show_flags.verbose):
-			show_parser.error("Try the 'list' subcommand to list all alix commands")
+		# Create the given alix command (records the command within the create function)
+		if not self.create(alix = record_flags.alias,
+							command = None,
+							desc = record_flags.description,
+							force = record_flags.force):
+			record_parser.error("Either delete the previous alix or use the -f flag when creating")
 
-	# Parse arguments for the list command
-	def list_parse(self, flags):
-		# Create list parser
-		list_parser = argparse.ArgumentParser(prog = "alix list", description = "List avaliable alix commands")
-		list_parser.add_argument("-v", "--verbose", action = "store_true", help = "Verbose printing of commands")
+	# Parse arguments for the create command
+	def create_parse(self, flags):
+		# Create the argument parser for the create option of alix
+		create_parser = argparse.ArgumentParser(prog = "alix create", description = "Create a new alix command")
+		create_parser.add_argument("alias", help = "The alix name to use when the command is called")
+		create_parser.add_argument("-f", "--force", action = "store_true", help = "Replace any existing alix commands with the new alix command")
+		create_parser.add_argument("command", help = "The actual batch command that should execute. Separate command lines by a \\n")
+		create_parser.add_argument("description", nargs = "?", default = None, help = "Provide a description for the alix")
 
-		# Parse list arguments
-		list_flags = list_parser.parse_args(flags)
-		# Print alix commands
-		for alix in self.alixes.keys():
-			self.show(alix, list_flags.verbose)
+		# Parse the create arguments
+		create_flags = create_parser.parse_args(flags)
+
+		# Create the alix command
+		if not self.create(alix = create_flags.alias,
+							command = create_flags.command,
+							desc = create_flags.description,
+							force = create_flags.force):
+			create_parser.error("Either delete the previous alix or use the -f flag when creating")
 
 	# Create a given alix command
 	def create(self, alix, command, desc, force):
 		# Make sure force is turned on if the alix has already been created
-		if not force and self.is_alix(alix):
+		if self.is_alix(alix) and not force:
 			print("Alix '%s' is already in use." % alix)
 			# Return create failed
 			return False
@@ -135,7 +195,7 @@ class Alix(object):
 			# Create the upper level batch file that calls the actual file to execute the commands
 			with open("%s%s.bat" % (self.alix_path, alix), "w") as command_file:
 				command_file.write("@ECHO OFF\n")
-				command_file.write("%s%s.bat\n" % (self.cmds_path, alix))
+				command_file.write("%s%s.bat %%*\n" % (self.cmds_path, alix))
 
 			# Create the lower level batch file that actually executes the command
 			with open("%s%s.bat" % (self.cmds_path, alix), "w") as command_file:
@@ -186,42 +246,21 @@ class Alix(object):
 			# Return created suceeded
 			return True
 
-	# Parse arguments for the create command
-	def create_parse(self, flags):
-		# Create the argument parser for the create option of alix
-		create_parser = argparse.ArgumentParser(prog = "alix create", description = "Create a new alix command")
-		create_parser.add_argument("alias", help = "The alix name to use when the command is called")
-		create_parser.add_argument("-f", "--force", action = "store_true", help = "Replace any existing alix commands with the new alix command")
-		create_parser.add_argument("command", help = "The actual batch command that should execute. Separate command lines by a \\n")
-		create_parser.add_argument("description", nargs = "?", default = None, help = "Provide a description for the alix")
+	# Parse arguments for edit command
+	def edit_parse(self, flags):
+		# Create the argument parser for the edit option of alix
+		edit_parser = argparse.ArgumentParser(prog = "alix edit", description = "Edit an alix command")
+		edit_parser.add_argument("alias", help = "The alias of the command to edit")
+		edit_parser.add_argument("-n", "--name", help = "Edit the alias for a command")
+		edit_parser.add_argument("-d", "--desc", help = "Edit the description for a command")
 
-		# Parse the create arguments
-		create_flags = create_parser.parse_args(flags)
+		# Parse edit arguments
+		edit_flags = edit_parser.parse_args(flags)
 
-		# Create the alix command
-		if not self.create(alix = create_flags.alias,
-							command = create_flags.command,
-							desc = create_flags.description,
-							force = create_flags.force):
-			create_parser.error("Either delete the previous alix or use the -f flag when creating")
-
-	# Parse arguments for the record command
-	def record_parse(self, flags):
-		# Create the argument parser for the record option of alix
-		record_parser = argparse.ArgumentParser(prog = "alix record", description = "Record an alix command")
-		record_parser.add_argument("alias", help = "The alias to use for the recorded command")
-		record_parser.add_argument("-f", "--force", action = "store_true", help = "Replace any existing alix commands with the new alix command")
-		record_parser.add_argument("description", nargs = "?", default = None, help = "Provide a description for the alix")
-
-		# Parse record arguments
-		record_flags = record_parser.parse_args(flags)
-
-		# Create the given alix command (records the command within the create function)
-		if not self.create(alix = record_flags.alias,
-							command = None,
-							desc = record_flags.description,
-							force = record_flags.force):
-			record_parser.error("Either delete the previous alix or use the -f flag when creating")
+		if not self.edit(alix = edit_flags.alias,
+							name = edit_flags.name,
+							desc = edit_flags.desc):
+			edit_parser.error("Use the 'list' subcommand to list all alixes")
 
 	# Edit an alix command without changing the underlying command
 	def edit(self, alix, name, desc):
@@ -230,6 +269,15 @@ class Alix(object):
 			# Return edit failed
 			return False
 		else:
+			# If both arugments are missing the user did not pass them in and so wants to edit the actual script
+			if name is None and desc is None:
+				# Get the editor that should be used (default to vim)
+				editor = os.environ.get("EDITOR") if os.environ.get("EDITOR") else "vim"
+				# Open the editor with the given alix file
+				cmd([editor, "%s%s.bat" % (self.cmds_path, alix)])
+				# Finished editing alix
+				return True
+
 			# Change alix description (must be first in order to avoid name change confusion)
 			if not desc is None:
 				self.alixes[alix]["desc"] = desc
@@ -238,6 +286,11 @@ class Alix(object):
 			if not name is None:
 				# Move upper level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.alix_path, alix, self.alix_path, name))
+				# Change the upper level file to call the new lower file
+				with open("%s%s.bat" % (self.alix_path, name), "w") as file:
+					file.write("@ECHO OFF\n")
+					# Call the batch file with all passed in arguments
+					file.write("%s%s.bat %%*\n" % (self.cmds_path, name))
 				# Move lower level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.cmds_path, alix, self.cmds_path, name))
 				# Change alix name to new name in dictionary
@@ -245,39 +298,6 @@ class Alix(object):
 
 			# Return edit suceeded
 			return True
-
-	# Parse arguments for edit command
-	def edit_parse(self, flags):
-		# Create the argument parser for the edit option of alix
-		edit_parser = argparse.ArgumentParser(prog = "alix record", description = "Record an alix command")
-		edit_parser.add_argument("alias", help = "The alias of the command to edit")
-		edit_parser.add_argument("-n", "--name", help = "Edit the alias for a command")
-		edit_parser.add_argument("-d", "--desc", help = "Edit the description for a command")
-
-		# Parse edit arguments
-		edit_flags = edit_parser.parse_args(flags)
-
-		# Make sure on of -n and -d is present
-		if edit_flags.name is None and edit_flags.desc is None:
-			edit_parser.error("At least one of -n and -d is required")
-		# Edit the given alix command
-		else:
-			if not self.edit(alix = edit_flags.alias,
-								name = edit_flags.name,
-								desc = edit_flags.desc):
-				edit_parser.error("Use the 'list' subcommand to list all alixes")
-
-	# Delete the given alix command from the dictionary (does not remove batch files, that is done on close)
-	def delete(self, alix, parser):
-		if self.is_alix(alix):
-			# Remove command from dictionary of commands
-			del self.alixes[alix]
-			# Return delete suceeded
-			return True
-		else:
-			print("No alix '%s' to delete" % alix)
-			# Return delete failed
-			return False
 
 	# Parse arguments for delete command
 	def delete_parse(self, flags):
@@ -291,6 +311,18 @@ class Alix(object):
 		# Delete given command
 		if not self.delete(delete_flags.alias, delete_parser):
 			delete_parser.error("Check a list of commands using the 'list' subcommand")
+
+	# Delete the given alix command from the dictionary (does not remove batch files, that is done on close)
+	def delete(self, alix, parser):
+		if self.is_alix(alix):
+			# Remove command from dictionary of commands
+			del self.alixes[alix]
+			# Return delete suceeded
+			return True
+		else:
+			print("No alix '%s' to delete" % alix)
+			# Return delete failed
+			return False
 
 def main(args):
 	alix = Alix()
