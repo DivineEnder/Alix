@@ -2,7 +2,7 @@
 # @Date:   2016-11-29 21:02:44
 # @Email:  danuta@u.rochester.edu
 # @Last modified by:   DivineEnder
-# @Last modified time: 2017-10-12 19:07:05
+# @Last modified time: 2017-11-17 22:12:42
 
 
 import sys
@@ -47,7 +47,23 @@ class Alix(object):
 	# Load dictionary of alixes from the specified pickle file
 	def load_alixes(self, cmds_file = None):
 		cmds_file = self.alixes_path if cmds_file is None else cmds_file
-		return pickle.load(open(cmds_file, "rb"))
+		loaded_alixes = pickle.load(open(cmds_file, "rb"))
+		# Check alixes to see if they need to be updated
+		for alix in loaded_alixes:
+			# If missing the modtime or the dictionary is not up to date update the dictionary with the newly modified file command
+			if not "lastmod" in loaded_alixes[alix].keys() or not int(loaded_alixes[alix]["lastmod"]) == int(os.path.getmtime("%s%s.bat" % (self.cmds_path, alix))):
+				cmd = []
+				# Read command from file (ignores @ECHO OFF)
+				with open("%s%s.bat" % (self.cmds_path, alix), "r") as file:
+					for line in file:
+						if not "@echo off" in line.lower() and not line.lower().startswith("rem") and not line.isspace() and not line == "":
+							cmd.append(line.replace("\n", ""))
+				# Set new modtime
+				loaded_alixes[alix]["lastmod"] = int(os.path.getmtime("%s%s.bat" % (self.cmds_path, alix)))
+				# Set the alix command to the read command
+				loaded_alixes[alix]["cmd"] = cmd
+		# Return dictionary of alixes
+		return loaded_alixes
 
 	# Store the dictionary of alixes in the specified pickle file
 	def store_alixes(self, cmds_file = None, alixes = None):
@@ -273,6 +289,7 @@ class Alix(object):
 				# Change the upper level file to call the new lower file
 				with open("%s%s.bat" % (self.alix_path, name), "w") as file:
 					file.write("@ECHO OFF\n")
+					# Call the batch file with all passed in arguments
 					file.write("%s%s.bat %%*\n" % (self.cmds_path, name))
 				# Move lower level batch file to new name
 				cmd("mv %s%s.bat %s%s.bat" % (self.cmds_path, alix, self.cmds_path, name))
